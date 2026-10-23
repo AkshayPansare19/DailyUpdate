@@ -26,6 +26,7 @@ from typing import Optional
 from zipfile import BadZipFile
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
@@ -42,6 +43,15 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("drone-app")
 
 app = FastAPI(title="Drone Data Collection API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        " https://dailyupdate-vwbp.onrender.com",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 excel_lock = threading.RLock()
 csv_lock = threading.RLock()
 
