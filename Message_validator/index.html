@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Drone Data Collection &bull; Importer Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        
+        <!-- App Title & Branding -->
+        <div class="flex items-center space-x-3">
+          <div class="bg-blue-600 p-2 sm:p-2.5 rounded-xl text-white shadow-sm shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-helicopter text-lg sm:text-xl"></i>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight leading-snug truncate">Drone Data Collection</h1>
+            <p class="text-[11px] sm:text-xs text-slate-400 truncate">Excel Workbook Importer</p>
+          </div>
+        </div>
+
+        <!-- Workbook actions -->
+        <div class="grid grid-cols-3 sm:flex sm:items-center gap-2 pt-1 sm:pt-0">
+          <button type="button" onclick="openWorkbookPreview()" class="inline-flex justify-center items-center px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            <i class="fa-solid fa-eye mr-1.5"></i> View Excel
+          </button>
+          <a href="/download" onclick="this.href='/download?t=' + Date.now()" class="inline-flex justify-center items-center px-3 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            <i class="fa-solid fa-file-excel mr-1.5 text-emerald-100"></i> Download
+          </a>
+          <a href="/download-csv" onclick="this.href='/download-csv?t=' + Date.now()" class="inline-flex justify-center items-center px-3 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            <i class="fa-solid fa-file-csv mr-1.5 text-blue-100"></i> CSV
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Import Section -->
+  <main class="max-w-3xl w-full mx-auto px-3.5 sm:px-6 py-5 sm:py-8 flex-1 flex flex-col justify-center">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8">
+
+      <div class="border-b border-slate-100 pb-3 sm:pb-4 mb-4 sm:mb-5">
+        <h2 class="text-lg sm:text-xl font-bold text-slate-900 flex items-center">
+          <i class="fa-solid fa-paste text-blue-600 mr-2 sm:mr-2.5"></i> Paste Drone Message
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+          Upload your existing workbook, then paste your <b>Starting</b>, <b>Ending</b>, or <b>Issues</b> message. Add an optional time below; each import is added to the next available row in the matching existing sheet.
+        </p>
+      </div>
+
+      <section class="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3.5 sm:p-4" aria-label="Upload existing Excel workbook">
+        <input id="workbookFile" type="file" accept=".xlsx" class="hidden" onchange="uploadWorkbook()">
+        <button id="uploadBtn" type="button" onclick="document.getElementById('workbookFile').click()"
+          class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+          <i class="fa-solid fa-upload mr-2"></i> Upload
+        </button>
+        <span id="workbookStatus" class="text-xs text-slate-600" role="status">Choose your existing .xlsx workbook.</span>
+        <p class="w-full text-xs text-slate-500">Existing sheets and rows are preserved. The app will not create sheets.</p>
+      </section>
+
+      <!-- Textarea Input -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label for="messageInput" class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600">
+            Message Text
+          </label>
+          <button type="button" onclick="clearMessage()" class="text-xs text-slate-400 hover:text-slate-600 transition">
+            Clear
+          </button>
+        </div>
+        <textarea
+          id="messageInput"
+          rows="10"
+          class="w-full text-xs sm:text-sm font-mono bg-slate-50 border border-slate-300 rounded-xl p-3 sm:p-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition resize-y"
+          placeholder="Daily Drone Data Collection – Starting Message
+
+Date: 06/08/2026
+Drone Pilot Name: Suyog
+District: Pune
+Substation Name: kashti
+Feeder Name: feeder 1
+Lineman Name: rohit"></textarea>
+      </div>
+
+      <div class="mt-3">
+        <label for="timeInput" class="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600">
+Time <span class="font-normal normal-case tracking-normal text-slate-400">(optional; applies to this row)</span>
+        </label>
+        <input id="timeInput" type="time"
+class="mt-1 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </div>
+
+      <!-- Import Button -->
+      <div class="mt-4 sm:mt-5">
+        <button
+          id="importBtn"
+          onclick="importMessage()"
+          class="w-full inline-flex justify-center items-center px-5 py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-sm rounded-xl shadow-md transition duration-150">
+          <i class="fa-solid fa-file-import mr-2"></i> Import to Excel
+        </button>
+      </div>
+
+      <!-- Result / Notification Alert -->
+      <div id="resultBox" class="mt-4 sm:mt-5 hidden"></div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-3.5 sm:py-4 px-4 text-center text-[11px] sm:text-xs text-slate-500">
+    Drone Data Collection Portal &bull; Appends to the uploaded Excel workbook and updates the local CSV
+  </footer>
+
+  <dialog id="workbookPreview" class="w-[min(96vw,1100px)] max-w-none rounded-2xl p-0 shadow-2xl backdrop:bg-slate-950/60">
+    <section class="flex max-h-[90vh] flex-col">
+      <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900"><i class="fa-solid fa-table mr-2 text-blue-600"></i>View Excel</h2>
+          <p id="previewFilename" class="mt-1 text-xs text-slate-500"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="previewSheet" class="text-xs font-medium text-slate-600">Sheet</label>
+          <select id="previewSheet" onchange="changePreviewSheet()"
+            class="max-w-48 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs"></select>
+          <button type="button" onclick="closeWorkbookPreview()" aria-label="Close preview"
+            class="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </header>
+      <div id="previewMessage" class="hidden px-4 pt-3 text-sm text-rose-700"></div>
+      <div id="previewTable" class="min-h-32 flex-1 overflow-auto p-4"></div>
+      <footer class="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+        <span id="previewPageStatus" class="text-xs text-slate-500"></span>
+        <div class="flex gap-2">
+          <button id="previewPrevious" type="button" onclick="changePreviewPage(-1)"
+            class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40">Previous</button>
+          <button id="previewNext" type="button" onclick="changePreviewPage(1)"
+            class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40">Next</button>
+        </div>
+      </footer>
+    </section>
+  </dialog>
+
+  <script>
+    let previewOffset = 0;
+    const previewPageSize = 100;
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+    }
+
+    async function refreshWorkbookStatus() {
+      const status = document.getElementById('workbookStatus');
+      try {
+        const response = await fetch('/workbook/status');
+        const data = await response.json();
+        status.textContent = data.uploaded
+          ? `Workbook ready: ${data.filename}`
+          : 'Choose your existing .xlsx workbook.';
+      } catch (error) {
+        status.textContent = 'Could not check workbook status.';
+      }
+    }
+
+    async function uploadWorkbook() {
+      const input = document.getElementById('workbookFile');
+      const button = document.getElementById('uploadBtn');
+      const status = document.getElementById('workbookStatus');
+      const file = input.files[0];
+      if (!file) return;
+
+      button.disabled = true;
+      status.textContent = `Uploading ${file.name}...`;
+      try {
+        const response = await fetch(`/upload?filename=${encodeURIComponent(file.name)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+          body: file
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Could not upload the workbook.');
+        status.textContent = `Workbook ready: ${data.filename}`;
+      } catch (error) {
+        status.textContent = error.message;
+      }
+      finally {
+        button.disabled = false;
+        input.value = '';
+      }
+    }
+
+    async function openWorkbookPreview() {
+      const dialog = document.getElementById('workbookPreview');
+      document.getElementById('previewMessage').classList.add('hidden');
+      document.getElementById('previewTable').textContent = 'Loading workbook...';
+      previewOffset = 0;
+      if (!dialog.open) dialog.showModal();
+      await loadWorkbookPreview();
+    }
+
+    async function loadWorkbookPreview(sheet) {
+      const message = document.getElementById('previewMessage');
+      const table = document.getElementById('previewTable');
+      const params = new URLSearchParams({ offset: String(previewOffset), limit: String(previewPageSize) });
+      if (sheet) params.set('sheet', sheet);
+      table.textContent = 'Loading workbook...';
+      message.classList.add('hidden');
+      try {
+        const response = await fetch(`/workbook/preview?${params}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Could not load workbook preview.');
+
+        const sheetSelect = document.getElementById('previewSheet');
+        sheetSelect.innerHTML = data.sheets.map(name =>
+          `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+        ).join('');
+        sheetSelect.value = data.sheet;
+        document.getElementById('previewFilename').textContent = data.filename;
+        renderWorkbookPreview(data);
+      } catch (error) {
+        table.replaceChildren();
+        message.textContent = error.message;
+        message.classList.remove('hidden');
+        document.getElementById('previewPageStatus').textContent = '';
+        document.getElementById('previewPrevious').disabled = true;
+        document.getElementById('previewNext').disabled = true;
+      }
+    }
+
+    function renderWorkbookPreview(data) {
+      const table = document.getElementById('previewTable');
+      if (!data.headers.length || !data.rows.length) {
+        table.innerHTML = '<p class="py-8 text-center text-sm text-slate-500">No rows to display in this sheet.</p>';
+      } else {
+        const headings = data.headers.map(header => `<th class="sticky top-0 whitespace-nowrap bg-slate-100 px-3 py-2 text-left text-xs font-semibold text-slate-700">${escapeHtml(header)}</th>`).join('');
+        const rows = data.rows.map(row =>
+          `<tr class="border-t border-slate-100 hover:bg-blue-50/50"><td class="whitespace-nowrap bg-slate-50 px-3 py-2 text-xs text-slate-500">${row.row_number}</td>${row.values.map(value => `<td class="min-w-24 max-w-80 whitespace-pre-wrap break-words px-3 py-2 text-xs text-slate-700">${escapeHtml(value)}</td>`).join('')}</tr>`
+        ).join('');
+        table.innerHTML = `<div class="overflow-auto rounded-lg border border-slate-200"><table class="min-w-full border-collapse"><thead><tr><th class="sticky top-0 bg-slate-100 px-3 py-2 text-left text-xs font-semibold text-slate-700">Row</th>${headings}</tr></thead><tbody>${rows}</tbody></table></div>`;
+      }
+      const firstRow = data.offset + 2;
+      const lastRow = Math.min(data.offset + data.limit + 1, data.total_rows);
+      document.getElementById('previewPageStatus').textContent = data.total_rows < 2
+        ? `No data rows in ${data.sheet}`
+        : `Rows ${firstRow}-${lastRow} of ${data.total_rows - 1} in ${data.sheet}`;
+      document.getElementById('previewPrevious').disabled = data.offset === 0;
+      document.getElementById('previewNext').disabled = !data.has_more;
+    }
+
+    function changePreviewSheet() {
+      previewOffset = 0;
+      loadWorkbookPreview(document.getElementById('previewSheet').value);
+    }
+
+    function changePreviewPage(direction) {
+      previewOffset = Math.max(0, previewOffset + direction * previewPageSize);
+      loadWorkbookPreview(document.getElementById('previewSheet').value);
+    }
+
+    function closeWorkbookPreview() {
+      document.getElementById('workbookPreview').close();
+    }
+
+    function clearMessage() {
+      const input = document.getElementById('messageInput');
+      input.value = '';
+      document.getElementById('timeInput').value = '';
+      input.focus();
+    }
+
+    async function importMessage() {
+      const rawInput = document.getElementById('messageInput').value.trim();
+      const btn = document.getElementById('importBtn');
+      const resultBox = document.getElementById('resultBox');
+
+      if (!rawInput) {
+        showResult('error', 'Please paste your message text first.');
+        return;
+      }
+
+      let payload = {
+        text: rawInput,
+        sender: '',
+        time: document.getElementById('timeInput').value
+      };
+
+      // Also support JSON in case it was copied as JSON
+      if (rawInput.startsWith('{') && rawInput.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(rawInput);
+          payload.text = parsed.text || rawInput;
+          payload.sender = parsed.sender || '';
+        } catch (e) {
+          payload.text = rawInput;
+        }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Importing to Excel...';
+      resultBox.classList.add('hidden');
+
+      try {
+        const response = await fetch('/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.saved) {
+          const isStarting = data.sheet === 'Starting';
+          const isEnding = data.sheet === 'Ending';
+          const isRoutine = data.sheet === 'Daily Routine';
+          
+          const bgClass = isStarting 
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+            : (isEnding 
+              ? 'bg-blue-50 border-blue-200 text-blue-900' 
+              : (isRoutine 
+                ? 'bg-purple-50 border-purple-200 text-purple-900' 
+                : 'bg-amber-50 border-amber-200 text-amber-900'));
+          const badgeClass = isStarting 
+            ? 'bg-emerald-200 text-emerald-950' 
+            : (isEnding 
+              ? 'bg-blue-200 text-blue-950' 
+              : (isRoutine 
+                ? 'bg-purple-200 text-purple-950' 
+                : 'bg-amber-200 text-amber-950'));
+          const checkColor = isStarting 
+            ? 'text-emerald-600' 
+            : (isEnding 
+              ? 'text-blue-600' 
+              : (isRoutine 
+                ? 'text-purple-600' 
+                : 'text-amber-600'));
+          const dividerColor = isStarting 
+            ? 'border-emerald-200' 
+            : (isEnding 
+              ? 'border-blue-200' 
+              : (isRoutine 
+                ? 'border-purple-200' 
+                : 'border-amber-200'));
+
+          let detailsHtml = '';
+          if (data.data) {
+            const pilot = escapeHtml(data.data['Drone Pilot Name']);
+            const date = escapeHtml(data.data['Date'] || '-');
+            const time = escapeHtml(data.data['Time'] || '-');
+            const district = escapeHtml(data.data['District'] || '-');
+            const substation = escapeHtml(data.data['Substation Name'] || '-');
+            const feeder = escapeHtml(data.data['Feeder Name']);
+            const lineman = escapeHtml(data.data['Lineman Name']);
+            const assets = escapeHtml(data.data['Total Assets Captured']);
+            const issueType = escapeHtml(data.data['Issue Type']);
+            const issueDesc = escapeHtml(data.data['Issue Description']);
+            const completed = escapeHtml(data.data['Completed']);
+            const remaining = escapeHtml(data.data['Remaining']);
+            const routineDesc = escapeHtml(data.data['Description']);
+
+            detailsHtml = `
+              <div class="mt-3 pt-3 border-t ${dividerColor} grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                ${pilot ? `<div><span class="text-slate-500">Pilot:</span> <b>${pilot}</b></div>` : ''}
+                <div><span class="text-slate-500">Date:</span> <b>${date}</b></div>
+                <div><span class="text-slate-500">Time:</span> <b>${time}</b></div>
+                <div><span class="text-slate-500">District:</span> <b>${district}</b></div>
+                <div><span class="text-slate-500">Substation:</span> <b>${substation}</b></div>
+                ${feeder ? `<div><span class="text-slate-500">Feeder:</span> <b>${feeder}</b></div>` : ''}
+                ${lineman ? `<div><span class="text-slate-500">Lineman:</span> <b>${lineman}</b></div>` : ''}
+                ${assets !== undefined && assets !== null && assets !== '' ? `<div><span class="text-slate-500">Assets:</span> <b>${assets}</b></div>` : ''}
+                ${completed !== undefined && completed !== null && completed !== '' ? `<div><span class="text-slate-500">Completed:</span> <b>${completed}</b></div>` : ''}
+                ${remaining !== undefined && remaining !== null && remaining !== '' ? `<div><span class="text-slate-500">Remaining:</span> <b>${remaining}</b></div>` : ''}
+                ${issueType ? `<div class="sm:col-span-3"><span class="text-slate-500">Issue:</span> <b>${issueType}</b></div>` : ''}
+                ${issueDesc ? `<div class="sm:col-span-3"><span class="text-slate-500">Details:</span> <b>${issueDesc}</b></div>` : ''}
+                ${routineDesc ? `<div class="sm:col-span-3"><span class="text-slate-500">Description:</span> <b>${routineDesc}</b></div>` : ''}
+              </div>
+            `;
+          }
+
+          let html = `
+            <div class="p-4 border rounded-xl ${bgClass}">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center font-bold text-sm">
+                  <i class="fa-solid fa-circle-check mr-2 ${checkColor}"></i>
+                  Successfully Imported!
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${badgeClass}">
+                  ${escapeHtml(data.sheet)} Sheet &bull; Row ${escapeHtml(data.excel_row)}
+                </span>
+              </div>
+              ${detailsHtml}
+          `;
+
+          if (data.warning) {
+            html += `
+              <div class="mt-3 p-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs">
+                <i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-600"></i> ${escapeHtml(data.warning)}
+              </div>
+            `;
+          }
+
+          html += `</div>`;
+          resultBox.innerHTML = html;
+          resultBox.classList.remove('hidden');
+
+          // Clear textarea on success
+          document.getElementById('messageInput').value = '';
+          document.getElementById('timeInput').value = '';
+          if (document.getElementById('workbookPreview').open) {
+            previewOffset = 0;
+            await loadWorkbookPreview(document.getElementById('previewSheet').value);
+          }
+        } else {
+          showResult('error', data.reason || data.error || data.detail || 'Failed to save record.');
+        }
+      } catch (err) {
+        showResult('error', 'Request failed: ' + err.message);
+        await refreshWorkbookStatus();
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-import mr-2"></i> Import to Excel';
+      }
+    }
+
+    function showResult(type, message) {
+      const resultBox = document.getElementById('resultBox');
+      const alert = document.createElement('div');
+      alert.className = 'p-3.5 sm:p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start';
+      const icon = document.createElement('i');
+      icon.className = 'fa-solid fa-circle-xmark mt-0.5 mr-2.5 text-rose-600';
+      const content = document.createElement('div');
+      const label = document.createElement('b');
+      label.textContent = 'Error: ';
+      content.append(label, document.createTextNode(message));
+      alert.append(icon, content);
+      resultBox.replaceChildren(alert);
+      resultBox.classList.remove('hidden');
+    }
+
+    refreshWorkbookStatus();
+  </script>
+</body>
+</html>
